@@ -32,7 +32,12 @@ if [ -d /tmp/artifacts ] && [ "$(ls /tmp/artifacts/ 2>/dev/null)" ]; then
     mv -T --verbose /tmp/artifacts/node_modules "${HOME}/node_modules"
 fi
 
+echo "---> DDK"
+echo "NPM_RUN_BUILD"
+echo "$NPM_RUN_BUILD"
 echo "---> Installing application source ..."
+pwd
+ls /tmp/src/*
 mv /tmp/src/* ./
 
 # Fix source directory permissions
@@ -80,18 +85,13 @@ fi
 
 if [ "$NODE_ENV" != "production" ]; then
 
+	echo "---> DDK"
 	echo "---> Building your Node application from source"
 	npm install
-
-else
-
-	echo "---> Installing all dependencies"
-	NODE_ENV=development npm install
-
-	#do not fail when there is no build script
 	echo "---> Building in production mode"
-	npm run build --if-present
-
+	# npm run build --if-present
+    # npm run build:client-intake-service --if-present
+    npm run $NPM_RUN_BUILD --if-present
 	echo "---> Pruning the development dependencies"
 	npm prune
 
