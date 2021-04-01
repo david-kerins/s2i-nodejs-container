@@ -73,6 +73,11 @@ if [ -z "$DEV_MODE" ]; then
   export DEV_MODE=false
 fi
 
+# Set the NPM_RUN_BUILD to false by default.
+if [ -z "$NPM_RUN_BUILD" ]; then
+  export NPM_RUN_BUILD=build
+fi
+
 # If NODE_ENV is not set by the user, then NODE_ENV is determined by whether
 # the container is run in development mode.
 if [ -z "$NODE_ENV" ]; then
@@ -89,9 +94,10 @@ if [ "$NODE_ENV" != "production" ]; then
 	echo "---> Building your Node application from source"
 	npm install
 	echo "---> Building in production mode"
-	# npm run build --if-present
-    # npm run build:client-intake-service --if-present
-    npm run $NPM_RUN_BUILD --if-present
+	#npm run build --if-present
+	echo $NPM_RUN_BUILD
+	npm run $NPM_RUN_BUILD --if-present
+	# npm run build:client-intake-service --if-present
 	echo "---> Pruning the development dependencies"
 	npm prune
 
