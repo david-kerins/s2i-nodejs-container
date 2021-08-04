@@ -37,7 +37,9 @@ echo "NPM_RUN_BUILD"
 echo "$NPM_RUN_BUILD"
 echo "---> Installing application source ..."
 pwd
+echo "ls /tmp/src/*"
 ls /tmp/src/*
+echo "mv /tmp/src/* ."
 mv /tmp/src/* ./
 
 # Fix source directory permissions
