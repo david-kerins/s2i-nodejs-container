@@ -6,9 +6,14 @@
 # IMAGE_NAME specifies a name of the candidate image used for testing.
 # The image has to be available before this script is executed.
 #
-# EXPRESS_REVISION specifies which express.js branch or tag should be tested;
-# by default it uses the latest released version as reported by
-# `npm show express version`.
+# For each client package test, XXX_REVISION specifies which
+# branch or tag should be tested; by default it uses the latest
+# released version as reported by `npm show XXX version` where
+# XXX is the name of the npm package.
+#
+# For each client package XXX_REPO must be defined in this
+# test file to set the repository that corresponds to the
+# npm package XXX.
 
 THISDIR=$(dirname ${BASH_SOURCE[0]})
 
@@ -27,6 +32,10 @@ test_npm_tmp_cleared
 kill_test_application
 test_dev_mode_true_development
 test_dev_mode_false_production
+"
+
+TEST_LIST_BINARY="\
+test_run_binary_application
 "
 
 TEST_LIST_NODE_ENV="\
@@ -54,13 +63,26 @@ test_safe_logging
 test_run_hw_application
 test_incremental_build
 test_build_express_webapp
-test_running_express_js
 "
+
+# define the client npm packages to be tested. For
+# each entry XXX in the list a corresponding value for
+# XXX_REVISION and XXX_REPO must be defined below
+TEST_LIST_CLIENTS="\
+express
+pino
+"
+
+CLIENT_LIST=($TEST_LIST_CLIENTS)
+readonly EXPRESS_REVISION="${EXPRESS_REVISION:-$(docker run --rm "${IMAGE_NAME}" -- npm show express version)}"
+readonly EXPRESS_REPO="https://github.com/expressjs/express.git"
+readonly PINO_REVISION=v"${PINO_REVISION:-$(docker run --rm "${IMAGE_NAME}" -- npm show pino version)}"
+readonly PINO_REPO="https://github.com/pinojs/pino.git"
+
 source "${THISDIR}/test-lib.sh"
 
 test -n $IMAGE_NAME \
   -a -n $VERSION
-readonly EXPRESS_REVISION="${EXPRESS_REVISION:-$(docker run --rm "${IMAGE_NAME}" -- npm show express version)}"
 
 test_dir="$(readlink -f $(dirname ${BASH_SOURCE[0]}))"
 image_dir="$(readlink -f ${test_dir}/..)"
@@ -114,11 +136,15 @@ run_s2i_build_proxy() {
   ct_s2i_build_as_df file://${test_dir}/test-hw ${IMAGE_NAME} ${IMAGE_NAME}-testhw ${s2i_args} $(ct_build_s2i_npm_variables) -e HTTP_PROXY=$1 -e http_proxy=$1 -e HTTPS_PROXY=$2 -e https_proxy=$2
 }
 
-run_s2i_build_express() {
+run_s2i_build_client() {
   ct_s2i_build_as_df \
-    "file://${test_dir}/express.js" "${IMAGE_NAME}" "${IMAGE_NAME}-express" \
+    "file://${test_dir}/$1" "${IMAGE_NAME}" "${IMAGE_NAME}-$1" \
     ${s2i_args} \
     $(ct_build_s2i_npm_variables) -e NODE_ENV=development
+}
+
+run_s2i_build_binary() {
+  ct_s2i_build_as_df file://${test_dir}/test-binary ${IMAGE_NAME} ${IMAGE_NAME}-testbinary ${s2i_args} $(ct_build_s2i_npm_variables) $1
 }
 
 prepare_dummy_git_repo() {
@@ -130,11 +156,11 @@ prepare_dummy_git_repo() {
   git commit -m "Sample commit"
 }
 
-prepare_express_repo() {
+prepare_client_repo() {
   git clone \
     --config advice.detachedHead="false" \
-    --branch "${EXPRESS_REVISION}" --depth 1 \
-    'https://github.com/expressjs/express.git' "$1"
+    --branch "$3" --depth 1 \
+    "$2" "$1"
   pushd "$1" >/dev/null || return
   for key in "${!gitconfig[@]}"; do
     git config --local "$key" "${gitconfig[$key]}"
@@ -151,36 +177,40 @@ prepare() {
   case "$1" in
     # TODO: STI build require the application is a valid 'GIT' repository, we
     # should remove this restriction in the future when a file:// is used.
-    app|hw|express-webapp)
+    app|hw|express-webapp|binary)
       pushd "${test_dir}/test-${1}" >/dev/null
       prepare_dummy_git_repo
       popd >/dev/null
       ;;
-    express)
-      prepare_express_repo "${test_dir}/express.js"
-      ;;
     *)
-      echo "Please specify a valid test application"
-      exit 1
+      if [[ " ${CLIENT_LIST[*]} " =~ "${test_case} " ]];
+      then
+        PREFIX=$1
+        REPO="${PREFIX^^}"_REPO
+        REVISION="${PREFIX^^}"_REVISION
+        prepare_client_repo "${test_dir}/$1" "${!REPO}" "${!REVISION}"
+      else
+        echo "Please specify a valid test application"
+        exit 1
+      fi
       ;;
   esac
 }
 
 run_test_application() {
-    if [[ $1 == app ]]; then
-        docker run -d --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} $2 ${IMAGE_NAME}-testapp
-    elif [[ $1 == hw ]]; then
-        docker run -d --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} $2 ${IMAGE_NAME}-testhw
-    elif [[ $1 == express-webapp ]]; then
-        docker run -d --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} $2 ${IMAGE_NAME}-testexpresswebapp
-    else
-        echo "No such test application"
-        exit 1
-    fi
+  case "$1" in
+    app|hw|express-webapp|binary)
+      docker run -d --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} $2 ${IMAGE_NAME}-test$1
+      ;;
+    *)
+      echo "No such test application"
+      exit 1
+      ;;
+    esac
 }
 
-run_express_test_suite() {
-  docker run --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} ${IMAGE_NAME}-express npm test
+run_client_test_suite() {
+  docker run --user=100001 $(ct_mount_ca_file) --rm --cidfile=${cid_file} ${IMAGE_NAME}-$1 npm test
 }
 
 kill_test_application() {
@@ -195,14 +225,23 @@ cleanup() {
       fi
   fi
 
-  for image in "${IMAGE_NAME}"-{test{app,hw,expresswebapp},express}; do
+  for image in "${IMAGE_NAME}"-{test{app,hw,express-webapp,binary}}; do
+    image_exists "$image" || continue
+    docker rmi -f "$image"
+  done
+
+  for client in "${CLIENT_LIST[@]}"; do
+    image="${IMAGE_NAME}-${client}"
     image_exists "$image" || continue
     docker rmi -f "$image"
   done
 
   rm -rf ${test_dir}/test-app/.git
   rm -rf ${test_dir}/test-hw/.git
-  rm -rf "${test_dir}/express.js"
+  rm -rf ${test_dir}/test-binary/.git
+  for client in "${CLIENT_LIST[@]}"; do
+    rm -rf "${test_dir}/${client}"
+  done
   rm -rf ${test_dir}/test-express-webapp/.git
 
   echo "$test_short_summary"
@@ -410,7 +449,7 @@ function test_scl_variables_in_dockerfile() {
 run_s2i_build_express_webapp() {
   local result
   prepare express-webapp
-  ct_s2i_build_as_df file://${test_dir}/test-express-webapp ${IMAGE_NAME} ${IMAGE_NAME}-testexpresswebapp ${s2i_args} $(ct_build_s2i_npm_variables)
+  ct_s2i_build_as_df file://${test_dir}/test-express-webapp ${IMAGE_NAME} ${IMAGE_NAME}-testexpress-webapp ${s2i_args} $(ct_build_s2i_npm_variables)
   run_test_application express-webapp
   wait_for_cid
   ct_test_response http://$(container_ip):${test_port} 200 'Welcome to Express Testing Application'
@@ -425,12 +464,12 @@ function test_build_express_webapp() {
   check_result $?
 }
 
-function test_running_express_js {
-  echo "Running express.js test suite"
-  prepare express
-  run_s2i_build_express
+function test_running_client_js {
+  echo "Running $1 test suite"
+  prepare "$1"
+  run_s2i_build_client "$1"
   check_result $?
-  run_express_test_suite
+  run_client_test_suite "$1"
   check_result $?
 }
 
@@ -505,7 +544,24 @@ function test_run_hw_application() {
   run_test_application hw
   # Wait for the container to write it's CID file
   wait_for_cid
+  check_result $?
   kill_test_application
+}
+
+function test_run_binary_application() {
+  # Test is suppressed because of https://github.com/Blizzard/node-rdkafka/issues/910
+  # The newest version of node-rdkafka works only with gcc-8 and higher
+  # On RHEL7 and CentOS7 is gcc-4.8
+  if [ "$OS" != "rhel7" ] && [ "$OS" != "centos7" ]; then
+    prepare binary
+    run_s2i_build_binary
+    check_result $?
+    # Verify that the HTTP connection can be established to test application container
+    run_test_application binary
+    # Wait for the container to write it's CID file
+    wait_for_cid
+    kill_test_application
+  fi
 }
 
 function test_safe_logging() {
@@ -523,7 +579,13 @@ function run_all_tests() {
   for test_case in $TEST_SET; do
     info "Running test $test_case ...."
     TESTCASE_RESULT=0
-    $test_case
+    if [[ " ${CLIENT_LIST[*]} " =~ "${test_case} " ]];
+    then
+      rm -f $cid_file
+      test_running_client_js "${test_case}"
+    else
+      $test_case
+    fi
     check_result $?
     local test_msg
     if [ $TESTCASE_RESULT -eq 0 ]; then
@@ -561,8 +623,14 @@ TEST_SET=${TESTS:-$TEST_LIST_DEV_MODE} run_all_tests "dev_mode"
 echo "Testing proxy safe logging..."
 prepare hw
 run_s2i_build_proxy http://user.password@0.0.0.0:8000 https://user.password@0.0.0.0:8000 > /tmp/build-log 2>&1
+check_result $?
 
 TEST_SET=${TESTS:-$TEST_LIST_HW} run_all_tests "hw"
+check_result $?
+
+TEST_SET=${TESTS:-$TEST_LIST_CLIENTS} run_all_tests "clients"
+
+TEST_SET=${TESTS:-$TEST_LIST_BINARY} run_all_tests "binary"
 
 echo "Success!"
 cleanup
