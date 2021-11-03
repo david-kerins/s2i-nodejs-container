@@ -1,4 +1,4 @@
-FROM rhscl/s2i-core-rhel7:latest
+FROM s2i-core-rhel7:latest
 #FROM rhscl/s2i-core-rhel7:1
 
 # This image provides a Node.JS environment you can use to run your Node.JS
