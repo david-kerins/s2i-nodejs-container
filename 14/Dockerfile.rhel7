@@ -56,29 +56,28 @@ LABEL summary="$SUMMARY" \
       help="For more information visit https://github.com/sclorg/s2i-nodejs-container" \
       usage="s2i build <SOURCE-REPOSITORY> rhscl/$NAME-$NODEJS_VERSION-rhel7:latest <APP-NAME>"
 
-RUN yum -v update -y && \
-    echo "Step 2 ***************" && \
-    yum -v clean all -y && \
-    echo "Step 3 ***************" && \
-    yum -v install -y epel-release && \
-    echo "Step 4 ***************" && \
-    yum -v clean all -y && \
-    echo "Step 5 ***************" && \
-    yum -v install -y yum-utils && \
-    echo "Step 6 ***************" && \
-    prepare-yum-repositories rhel-server-rhscl-7-rpms && \
-    echo "Step 7 ***************" && \
-    MODULE_DEPS="make gcc gcc-c++ git openssl-devel" && \
-    echo "Step 8 ***************" && \
-    INSTALL_PKGS="$MODULE_DEPS rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper" && \
-    echo "Step 9 ***************" && \
-    ln -s /usr/lib/node_modules/nodemon/bin/nodemon.js /usr/bin/nodemon && \
-    echo "Step 10 ***************" && \
-    yum -v install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
-    echo "Step 11 ***************" && \
-    rpm -V $INSTALL_PKGS && \
-    echo "Step 12 ***************" && \
-    yum -v -y clean all --enablerepo='*'
+RUN yum -v update -y
+RUN echo "Step 2 ***************"
+RUN yum -v clean all -y
+RUN echo "Step 3 ***************"
+RUN yum -v install -y epel-release
+RUN echo "Step 4 ***************"
+RUN yum -v clean all -y
+RUN echo "Step 5 ***************"
+RUN yum -v install -y yum-utils
+RUN echo "Step 6 ***************"
+RUN prepare-yum-repositories rhel-server-rhscl-7-rpms
+RUN echo "Step 7 ***************"
+RUN MODULE_DEPS="make gcc gcc-c++ git openssl-devel" && \
+    INSTALL_PKGS="$MODULE_DEPS rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper"
+RUN echo "Step 9 ***************"
+RUN ln -s /usr/lib/node_modules/nodemon/bin/nodemon.js /usr/bin/nodemon
+RUN echo "Step 10 ***************"
+RUN yum -v install -y --setopt=tsflags=nodocs $INSTALL_PKGS
+RUN echo "Step 11 ***************"
+RUN rpm -V $INSTALL_PKGS
+RUN echo "Step 12 ***************"
+RUN yum -v -y clean all --enablerepo='*'
 
 # Copy the S2I scripts from the specific language image to $STI_SCRIPTS_PATH
 COPY ./s2i/bin/ $STI_SCRIPTS_PATH
