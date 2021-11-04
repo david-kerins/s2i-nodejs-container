@@ -56,6 +56,7 @@ LABEL summary="$SUMMARY" \
       help="For more information visit https://github.com/sclorg/s2i-nodejs-container" \
       usage="s2i build <SOURCE-REPOSITORY> rhscl/$NAME-$NODEJS_VERSION-rhel7:latest <APP-NAME>"
 
+RUN echo "Step 1 ***************"
 RUN yum -v update -y
 RUN echo "Step 2 ***************"
 RUN yum -v clean all -y
