@@ -91,6 +91,7 @@ else
 	#do not fail when there is no build script
 	echo "---> Building in production mode"
 	#ddk npm run build --if-present
+	npm install
     echo $NPM_RUN_BUILD
     npm run $NPM_RUN_BUILD --if-present
 	echo "---> Pruning the development dependencies"
