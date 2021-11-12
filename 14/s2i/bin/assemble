@@ -33,6 +33,10 @@ if [ -d /tmp/artifacts ] && [ "$(ls /tmp/artifacts/ 2>/dev/null)" ]; then
 fi
 
 echo "---> Installing application source ..."
+pwd
+echo "ls /tmp/src/*"
+ls /tmp/src/*
+echo "mv /tmp/src/* ."
 mv /tmp/src/* ./
 
 # Fix source directory permissions
