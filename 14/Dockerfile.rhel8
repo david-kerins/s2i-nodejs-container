@@ -60,6 +60,7 @@ RUN yum -y module enable nodejs:$NODEJS_VERSION && \
 
 # Copy the S2I scripts from the specific language image to $STI_SCRIPTS_PATH
 COPY ./s2i/bin/ $STI_SCRIPTS_PATH
+RUN chmod -R ugo+rwx ${STI_SCRIPTS_PATH}
 
 RUN ls -l $STI_SCRIPTS_PATH
 RUN ls -ld $STI_SCRIPTS_PATH
