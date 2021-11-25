@@ -17,7 +17,8 @@ EXPOSE 8080
 ENV NODEJS_VERSION=12 \
     NPM_RUN=start \
     NAME=nodejs \
-    NPM_CONFIG_PREFIX=$HOME/.npm-global
+    NPM_CONFIG_PREFIX=$HOME/.npm-global \
+    GS4JS_HOME=/usr/lib64
 
 # Set SCL related variables in Dockerfile so that the collection is enabled by default
 # Add $HOME/node_modules/.bin to the $PATH, allowing user to make npm scripts
@@ -54,7 +55,7 @@ LABEL summary="$SUMMARY" \
 
 RUN yum install -y centos-release-scl-rh && \
     ( [ "rh-${NAME}${NODEJS_VERSION}" != "${NODEJS_SCL}" ] && yum remove -y ${NODEJS_SCL}\* || : ) && \
-    INSTALL_PKGS="rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper" && \
+    INSTALL_PKGS="rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper ghostscript libgs-devel" && \
     ln -s /usr/lib/node_modules/nodemon/bin/nodemon.js /usr/bin/nodemon && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
