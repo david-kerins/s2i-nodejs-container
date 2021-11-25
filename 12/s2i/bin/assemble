@@ -37,9 +37,7 @@ echo "NPM_RUN_BUILD"
 echo "$NPM_RUN_BUILD"
 echo "---> Installing application source ..."
 pwd
-#echo "ls /tmp/src/*"
-#ls /tmp/src/*
-echo "mv /tmp/src/* ."
+ls /tmp/src/*
 mv /tmp/src/* ./
 
 # Fix source directory permissions
@@ -90,18 +88,21 @@ if [ -z "$NODE_ENV" ]; then
   fi
 fi
 
+echo "---> DEV_MODE = ${DEV_MODE}"
+echo "---> NODE_ENV = ${NODE_ENV}"
+
 if [ "$NODE_ENV" != "production" ]; then
 
 	echo "---> DDK"
-	echo "---> Building your Node application from source"
-	npm install
+	#echo "---> Building your Node application from source"
+	#npm install
 	echo "---> Building in production mode"
 	#npm run build --if-present
 	echo $NPM_RUN_BUILD
-	npm run $NPM_RUN_BUILD --if-present
+	#npm run $NPM_RUN_BUILD --if-present
 	# npm run build:client-intake-service --if-present
-	echo "---> Pruning the development dependencies"
-	npm prune
+	#echo "---> Pruning the development dependencies"
+	#npm prune
 
 	# Clear the npm's cache and tmp directories only if they are not a docker volumes
 	NPM_CACHE=$(npm config get cache)

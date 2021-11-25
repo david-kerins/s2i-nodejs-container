@@ -33,6 +33,10 @@ if [ -d /tmp/artifacts ] && [ "$(ls /tmp/artifacts/ 2>/dev/null)" ]; then
 fi
 
 echo "---> Installing application source ..."
+pwd
+echo "ls /tmp/src/*"
+ls /tmp/src/*
+echo "mv /tmp/src/* ."
 mv /tmp/src/* ./
 
 # Fix source directory permissions
@@ -90,8 +94,11 @@ else
 
 	#do not fail when there is no build script
 	echo "---> Building in production mode"
-	npm run build --if-present
-
+	#ddk npm run build --if-present
+	#npm install
+    echo $NPM_RUN_BUILD
+	echo "Not really building here."
+    #npm run $NPM_RUN_BUILD --if-present
 	echo "---> Pruning the development dependencies"
 	npm prune
 
