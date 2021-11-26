@@ -25,33 +25,33 @@ ENV NODEJS_VERSION=12 \
 # available on the CLI without using npm's --global installation mode
 ENV SUMMARY="Platform for building and running Node.js $NODEJS_VERSION applications" \
     DESCRIPTION="Node.js $NODEJS_VERSION available as container is a base platform for \
-building and running various Node.js $NODEJS_VERSION applications and frameworks. \
-Node.js is a platform built on Chrome's JavaScript runtime for easily building \
-fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model \
-that makes it lightweight and efficient, perfect for data-intensive real-time applications \
-that run across distributed devices." \
+    building and running various Node.js $NODEJS_VERSION applications and frameworks. \
+    Node.js is a platform built on Chrome's JavaScript runtime for easily building \
+    fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model \
+    that makes it lightweight and efficient, perfect for data-intensive real-time applications \
+    that run across distributed devices." \
     PATH=/opt/rh/rh-nodejs$NODEJS_VERSION/root/usr/bin:$HOME/node_modules/.bin/:$HOME/.npm-global/bin/:$PATH \
     LD_LIBRARY_PATH=/opt/rh/rh-nodejs$NODEJS_VERSION/root/usr/lib64 \
     X_SCLS=rh-nodejs$NODEJS_VERSION \
     MANPATH=/opt/rh/rh-nodejs$NODEJS_VERSION/root/usr/share/man
 
 LABEL summary="$SUMMARY" \
-      description="$DESCRIPTION" \
-      io.k8s.description="$DESCRIPTION" \
-      io.k8s.display-name="Node.js $NODEJS_VERSION" \
-      io.openshift.expose-services="8080:http" \
-      io.openshift.tags="builder,$NAME,$NAME$NODEJS_VERSION" \
-      io.openshift.s2i.scripts-url="image:///usr/libexec/s2i" \
-      io.s2i.scripts-url="image:///usr/libexec/s2i" \
-      com.redhat.dev-mode="DEV_MODE:false" \
-      com.redhat.deployments-dir="${APP_ROOT}/src" \
-      com.redhat.dev-mode.port="DEBUG_PORT:5858"\
-      com.redhat.component="rh-$NAME$NODEJS_VERSION-container" \
-      name="centos7/$NAME-$NODEJS_VERSION-centos7" \
-      version="$NODEJS_VERSION" \
-      maintainer="SoftwareCollections.org <sclorg@redhat.com>" \
-      help="For more information visit https://github.com/sclorg/s2i-nodejs-container" \
-      usage="s2i build <SOURCE-REPOSITORY> quay.io/centos7/$NAME-$NODEJS_VERSION-centos7:latest <APP-NAME>"
+    description="$DESCRIPTION" \
+    io.k8s.description="$DESCRIPTION" \
+    io.k8s.display-name="Node.js $NODEJS_VERSION" \
+    io.openshift.expose-services="8080:http" \
+    io.openshift.tags="builder,$NAME,$NAME$NODEJS_VERSION" \
+    io.openshift.s2i.scripts-url="image:///usr/libexec/s2i" \
+    io.s2i.scripts-url="image:///usr/libexec/s2i" \
+    com.redhat.dev-mode="DEV_MODE:false" \
+    com.redhat.deployments-dir="${APP_ROOT}/src" \
+    com.redhat.dev-mode.port="DEBUG_PORT:5858"\
+    com.redhat.component="rh-$NAME$NODEJS_VERSION-container" \
+    name="centos7/$NAME-$NODEJS_VERSION-centos7" \
+    version="$NODEJS_VERSION" \
+    maintainer="SoftwareCollections.org <sclorg@redhat.com>" \
+    help="For more information visit https://github.com/sclorg/s2i-nodejs-container" \
+    usage="s2i build <SOURCE-REPOSITORY> quay.io/centos7/$NAME-$NODEJS_VERSION-centos7:latest <APP-NAME>"
 
 RUN yum install -y centos-release-scl-rh && \
     ( [ "rh-${NAME}${NODEJS_VERSION}" != "${NODEJS_SCL}" ] && yum remove -y ${NODEJS_SCL}\* || : ) && \
@@ -66,6 +66,12 @@ COPY ./s2i/bin/ $STI_SCRIPTS_PATH
 
 # Copy extra files to the image, including help file.
 COPY ./root/ /
+
+# Copy GoA cA certs
+COPY ./certs/goa-root-ca.pem /etc/pki/ca-trust/source/anchors/
+
+# Update root certifcates
+RUN update-ca-trust
 
 # Drop the root user and make the content of /opt/app-root owned by user 1001
 RUN chown -R 1001:0 ${APP_ROOT} && chmod -R ug+rwx ${APP_ROOT} && \
