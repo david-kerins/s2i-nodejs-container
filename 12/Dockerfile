@@ -16,6 +16,8 @@ EXPOSE 8080
 
 ENV NODEJS_VERSION=12 \
     NPM_RUN=start \
+    NPM_RUN_BUILD=build \
+    STI_SCRIPTS_PATH=/usr/libexec/s2i \
     NAME=nodejs \
     NPM_CONFIG_PREFIX=$HOME/.npm-global \
     GS4JS_HOME=/usr/lib64
@@ -63,6 +65,9 @@ RUN yum install -y centos-release-scl-rh && \
 
 # Copy the S2I scripts from the specific language image to $STI_SCRIPTS_PATH
 COPY ./s2i/bin/ $STI_SCRIPTS_PATH
+
+# Set perms
+RUN chmod +x /usr/libexec/s2i/*
 
 # Copy extra files to the image, including help file.
 COPY ./root/ /
