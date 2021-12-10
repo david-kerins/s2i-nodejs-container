@@ -16,8 +16,11 @@ EXPOSE 8080
 
 ENV NODEJS_VERSION=14 \
     NPM_RUN=start \
+    NPM_RUN_BUILD=build \
+    STI_SCRIPTS_PATH=/usr/libexec/s2i \
     NAME=nodejs \
-    NPM_CONFIG_PREFIX=$HOME/.npm-global
+    NPM_CONFIG_PREFIX=$HOME/.npm-global \
+    GS4JS_HOME=/usr/lib64
 
 # Set SCL related variables in Dockerfile so that the collection is enabled by default
 # Add $HOME/node_modules/.bin to the $PATH, allowing user to make npm scripts
