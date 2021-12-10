@@ -54,7 +54,7 @@ LABEL summary="$SUMMARY" \
 
 RUN yum install -y centos-release-scl-rh && \
     MODULE_DEPS="make gcc gcc-c++ git openssl-devel" && \
-    INSTALL_PKGS="$MODULE_DEPS rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper" && \
+    INSTALL_PKGS="$MODULE_DEPS rh-nodejs${NODEJS_VERSION} rh-nodejs${NODEJS_VERSION}-npm rh-nodejs${NODEJS_VERSION}-nodejs-nodemon nss_wrapper ghostscript libgs libgs-devel" && \
     ln -s /usr/lib/node_modules/nodemon/bin/nodemon.js /usr/bin/nodemon && \
     yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
@@ -65,6 +65,12 @@ COPY ./s2i/bin/ $STI_SCRIPTS_PATH
 
 # Copy extra files to the image, including help file.
 COPY ./root/ /
+
+# Copy GoA cA certs
+COPY ./certs/goa-root-ca.pem /etc/pki/ca-trust/source/anchors/
+
+# Update root certifcates
+RUN update-ca-trust
 
 # Drop the root user and make the content of /opt/app-root owned by user 1001
 RUN chown -R 1001:0 ${APP_ROOT} && chmod -R ug+rwx ${APP_ROOT} && \
