@@ -63,8 +63,11 @@ RUN yum install -y centos-release-scl-rh && \
     rpm -V $INSTALL_PKGS && \
     yum -y clean all --enablerepo='*'
 
-# Copy the S2I scripts from the specific language image to $STI_SCRIPTS_PATH
+# Copy the S2I scripts from the specific language image to STI_SCRIPTS_PATH
 COPY ./s2i/bin/ $STI_SCRIPTS_PATH
+
+# Set perms
+RUN chmod +x /usr/libexec/s2i/*
 
 # Copy extra files to the image, including help file.
 COPY ./root/ /
